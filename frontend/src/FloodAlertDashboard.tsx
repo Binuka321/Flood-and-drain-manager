@@ -1,6 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
+import FloodMapApp from "./FloodMapApp";
 
 export default function FloodAlertDashboard() {
+  const [showFloodMap, setShowFloodMap] = useState(false);
+
+  if (showFloodMap) {
+    return <FloodMapApp />;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
       {/* Animated background elements */}
@@ -23,7 +30,9 @@ export default function FloodAlertDashboard() {
       </div>
 
       <div className="relative z-10 grid grid-cols-2 gap-8 lg:gap-10 max-w-2xl w-full px-4 mb-12">
-        <button className="group relative w-full aspect-square rounded-3xl font-bold text-2xl transition-all duration-500 transform hover:scale-110 bg-gradient-to-br from-blue-600 to-blue-800 shadow-2xl flex items-center justify-center border border-blue-300/50 overflow-hidden">
+        <button 
+          onClick={() => setShowFloodMap(true)}
+          className="group relative w-full aspect-square rounded-3xl font-bold text-2xl transition-all duration-500 transform hover:scale-110 bg-gradient-to-br from-blue-600 to-blue-800 shadow-2xl flex items-center justify-center border border-blue-300/50 overflow-hidden cursor-pointer">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
           <div className="absolute inset-0 bg-blue-500 opacity-0 group-hover:opacity-30 blur-2xl transition-opacity duration-500"></div>
           <span className="relative z-10 group-hover:drop-shadow-lg transition-all duration-500">Flood map</span>
