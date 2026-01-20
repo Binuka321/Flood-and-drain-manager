@@ -708,19 +708,113 @@ export default function PostFloodRationDistribution(): JSX.Element {
 
   const downloadReportPDF = () => {
     const doc = new jsPDF();
-    const lines = reportText.split("\n");
-    let y = 10;
-    doc.setFontSize(12);
-    lines.forEach(line => {
-      if (y > 280) {
-        doc.addPage();
-        y = 10;
-      }
-      doc.text(line, 10, y);
-      y += 7;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    let y = 15;
+
+    // Draw frame
+    const drawFrame = () => {
+      doc.setDrawColor(233, 30, 99); // pink
+      doc.setLineWidth(2);
+      doc.rect(7, 7, pageWidth - 14, pageHeight - 14, 'S');
+    };
+
+    drawFrame();
+
+    // Title
+    doc.setFontSize(18);
+    doc.setTextColor(233, 30, 99);
+    doc.text("POST-FLOOD RATION DISTRIBUTION REPORT", pageWidth / 2, y, { align: 'center' });
+    y += 10;
+    doc.setFontSize(11);
+    doc.setTextColor(80, 80, 80);
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, pageWidth / 2, y, { align: 'center' });
+    y += 10;
+
+    // Section: Summary
+    doc.setFontSize(14);
+    doc.setTextColor(233, 30, 99);
+    doc.text('Summary Statistics', 15, y);
+    y += 7;
+    doc.setFontSize(11);
+    doc.setTextColor(33, 33, 33);
+    const summary = [
+      `Total Distributions: ${stats.totalDistributions}`,
+      `Total Households Assisted: ${stats.totalHouseholds}`,
+      `Total Rations Distributed: ${stats.totalRations}`,
+      `Pending Distributions: ${stats.pendingDistributions}`,
+      `High Priority Cases: ${stats.highPriority}`,
+      `Critical Cases: ${stats.criticalPriority}`,
+      `Distributions Today: ${stats.todayDistributions}`,
+      `Average Households per Distribution: ${stats.avgHouseholds}`
+    ];
+    summary.forEach(line => {
+      doc.text(line, 18, y);
+      y += 6;
     });
-    const today = new Date().toLocaleDateString();
-    doc.save(`flood_ration_report_${today.replace(/\//g, '-')}.pdf`);
+    y += 2;
+
+    // Section: District-wise
+    doc.setFontSize(14);
+    doc.setTextColor(233, 30, 99);
+    doc.text('District-wise Distribution', 15, y);
+    y += 7;
+    doc.setFontSize(11);
+    doc.setTextColor(33, 33, 33);
+    districtDistribution.forEach(d => {
+      doc.text(`• ${d.name}: ${d.count} distributions, ${d.households} households, ${d.rations} rations`, 18, y);
+      y += 6;
+      if (y > pageHeight - 20) { doc.addPage(); drawFrame(); y = 15; }
+    });
+    y += 2;
+
+    // Section: Detailed Entries
+    doc.setFontSize(14);
+    doc.setTextColor(233, 30, 99);
+    doc.text('Detailed Entries', 15, y);
+    y += 7;
+
+    entries.forEach((entry, idx) => {
+      // Prepare entry details
+      let details = [
+        `Households: ${entry.households}`,
+        `Rations: ${entry.totalRations} (${entry.rationsPerHousehold} per HH)`,
+        `Status: ${entry.status.toUpperCase()}`,
+        `Delivery: ${entry.deliveryMethod}`
+      ];
+      if (entry.coordinator) details.push(`Coordinator: ${entry.coordinator}`);
+      if (entry.estimatedDeliveryTime) details.push(`ETA: ${entry.estimatedDeliveryTime}`);
+      if (entry.latitude && entry.longitude) details.push(`Location: ${entry.latitude}, ${entry.longitude}`);
+      if (entry.notes) details.push(`Notes: ${entry.notes}`);
+
+      // Calculate required height for this entry
+      const lineHeight = 5;
+      const titleHeight = 7;
+      const boxPadding = 4;
+      const boxHeight = titleHeight + details.length * lineHeight + boxPadding * 2;
+
+      if (y + boxHeight > pageHeight - 15) { doc.addPage(); drawFrame(); y = 15; }
+
+      // Draw entry box
+      doc.setDrawColor(233, 30, 99);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(13, y, pageWidth - 26, boxHeight, 2, 2, 'S');
+
+      // Entry title
+      doc.setFontSize(12);
+      doc.setTextColor(33, 33, 33);
+      doc.text(`${entry.date} - ${entry.district} (${entry.priority.toUpperCase()})`, 16, y + boxPadding + titleHeight - 2);
+
+      // Entry details
+      doc.setFontSize(10);
+      details.forEach((line, i) => {
+        doc.text(line, 18, y + boxPadding + titleHeight + i * lineHeight + 2);
+      });
+
+      y += boxHeight + 4; // Add extra space between entries
+    });
+
+    doc.save(`flood_ration_report_${new Date().toLocaleDateString().replace(/\//g, '-')}.pdf`);
   };
   // Modal for report export
   {showReportModal && (
