@@ -1,11 +1,17 @@
 import React, { useState } from "react";
 import FloodMapApp from "./FloodMapApp";
+import PostFloodRationDistribution from "./PostFloodRationDistribution";
 
 export default function FloodAlertDashboard() {
   const [showFloodMap, setShowFloodMap] = useState(false);
+  const [showRationDistribution, setShowRationDistribution] = useState(false);
 
   if (showFloodMap) {
     return <FloodMapApp />;
+  }
+
+  if (showRationDistribution) {
+    return <PostFloodRationDistribution />;
   }
 
   return (
@@ -50,7 +56,7 @@ export default function FloodAlertDashboard() {
           <span className="relative z-10 group-hover:drop-shadow-lg transition-all duration-500">Disease management</span>
         </button>
 
-        <button className="group relative w-full aspect-square rounded-3xl font-bold text-2xl transition-all duration-500 transform hover:scale-110 bg-gradient-to-br from-orange-600 to-orange-800 shadow-2xl flex items-center justify-center border border-orange-300/50 overflow-hidden">
+        <button onClick={() => setShowRationDistribution(true)} className="group relative w-full aspect-square rounded-3xl font-bold text-2xl transition-all duration-500 transform hover:scale-110 bg-gradient-to-br from-orange-600 to-orange-800 shadow-2xl flex items-center justify-center border border-orange-300/50 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
           <div className="absolute inset-0 bg-orange-500 opacity-0 group-hover:opacity-30 blur-2xl transition-opacity duration-500"></div>
           <span className="relative z-10 group-hover:drop-shadow-lg transition-all duration-500">Post flood ration distribution</span>
