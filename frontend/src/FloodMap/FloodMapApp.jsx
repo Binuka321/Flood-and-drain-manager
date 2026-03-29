@@ -33,7 +33,7 @@ const DISTRICTS = {
   Vavuniya: { elevation: 90 }
 };
 
-export default function FloodMapApp() {
+export default function FloodMapApp({ onBack }) {
   const [rainfall, setRainfall] = useState(0);
   const [riskMap, setRiskMap] = useState({});
   const [selectedDistricts, setSelectedDistricts] = useState({});
@@ -121,6 +121,21 @@ export default function FloodMapApp() {
     <div style={{ display: "flex", height: "100vh" }}>
       {/* Sidebar */}
       <div style={{ width: "30%", padding: 20, background: "#f5f5f5", overflowY: "auto" }}>
+        <button 
+          onClick={onBack}
+          style={{
+            padding: "8px 16px",
+            marginBottom: "10px",
+            background: "#007BFF",
+            color: "white",
+            border: "none",
+            borderRadius: "4px",
+            cursor: "pointer",
+            fontSize: "14px"
+          }}
+        >
+          ← Back to Dashboard
+        </button>
         <h2 style={{color:"black"}}>Sri Lanka Flood Risk Map</h2>
         <p style={{ color: "#666", fontSize: "14px" }}>Click districts on map or select below</p>
 

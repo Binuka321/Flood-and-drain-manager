@@ -1,13 +1,14 @@
 import React, { useState } from "react";
-import FloodMapApp from "./FloodMapApp";
-import PostFloodRationDistribution from "./PostFloodRationDistribution";
+// @ts-ignore
+import FloodMapApp from "./FloodMap/FloodMapApp.jsx";
+import PostFloodRationDistribution from "./PostFloodRationDistribution/PostFloodRationDistribution.tsx";
 
 export default function FloodAlertDashboard() {
   const [showFloodMap, setShowFloodMap] = useState(false);
   const [showRationDistribution, setShowRationDistribution] = useState(false);
 
   if (showFloodMap) {
-    return <FloodMapApp />;
+    return <FloodMapApp onBack={() => setShowFloodMap(false)} />;
   }
 
   if (showRationDistribution) {
