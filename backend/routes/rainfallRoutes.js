@@ -5,6 +5,7 @@ import {
   detectAnomalies, 
   predictFloodRisk 
 } from '../utils/predictionEngine.js';
+import { authenticate, authorize } from './authRoutes.js';
 
 export const rainfallRouter = express.Router();
 
