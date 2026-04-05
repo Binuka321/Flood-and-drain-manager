@@ -1,13 +1,23 @@
 import express from 'express';
 import cors from 'cors';
+import dotenv from 'dotenv';
+import connectDB from './config/db.js';
+
+import { authRouter } from './routes/authRoutes.js';
 import { rainfallRouter } from './routes/rainfallRoutes.js';
 import { predictionRouter } from './routes/predictionRoutes.js';
-import { authRouter } from './routes/authRoutes.js';
+
+import createDefaultAdmin from './utils/createAdmin.js';
+
+dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
-// Middleware
+// Connect DB + create admin
+connectDB().then(() => {
+  createDefaultAdmin();
+});
+
 app.use(cors());
 app.use(express.json());
 
@@ -18,12 +28,10 @@ app.use('/api/prediction', predictionRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Flood Manager API is running' });
+  res.json({ status: 'OK', message: 'Flood Manager API running' });
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`🌊 Flood Manager API running on http://localhost:${PORT}`);
-  console.log(`📊 Rainfall data available at http://localhost:${PORT}/api/rainfall`);
-  console.log(`🔮 Predictions available at http://localhost:${PORT}/api/prediction`);
+app.listen(process.env.PORT, () => {
+  console.log(`🚀 Server running on port ${process.env.PORT}`);
 });
