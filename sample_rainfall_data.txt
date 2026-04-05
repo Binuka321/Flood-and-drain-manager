@@ -1,0 +1,18 @@
+District: Anuradhapura
+Latitude: 8.3114
+Longitude: 80.4037
+
+Monthly Rainfall Data (mm):
+
+January: 125.3
+February: 98.7
+March: 145.2
+April: 168.9
+May: 189.4
+June: 145.6
+July: 132.8
+August: 145.3
+September: 178.9
+October: 245.6
+November: 198.7
+December: 156.4
