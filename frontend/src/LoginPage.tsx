@@ -52,9 +52,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white p-4">
       <div className="w-full max-w-md rounded-2xl bg-black/40 p-6 shadow-2xl backdrop-blur-lg border border-cyan-400/20">
         <h2 className="text-3xl font-bold mb-2 text-center">{mode === 'login' ? 'Login' : 'Register'}</h2>
-        <p className="text-sm text-gray-300 text-center mb-4">
-          {mode === 'login' ? 'Admin default: admin / Admin@123' : 'Create a normal user account'}
-        </p>
+        
 
         <div className="flex justify-center gap-2 mb-4">
           <button type="button" onClick={() => setMode('login')} className={`px-4 py-2 rounded-lg ${mode === 'login' ? 'bg-cyan-500 font-semibold' : 'bg-slate-800'}`}>
