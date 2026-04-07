@@ -17,7 +17,7 @@ export default function FloodAlertDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
-      {/* Animated background elements */}
+      {/* Animated background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500 rounded-full mix-blend-screen blur-3xl opacity-20 animate-pulse" style={{animationDuration: '4s'}}></div>
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500 rounded-full mix-blend-screen blur-3xl opacity-20 animate-pulse" style={{animationDuration: '6s'}}></div>
