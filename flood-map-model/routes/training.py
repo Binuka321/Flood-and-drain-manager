@@ -10,6 +10,93 @@ training_bp = Blueprint('training', __name__)
 # Global model instance
 current_model = None
 
+
+def _list_saved_models(model_path):
+    if not os.path.exists(model_path):
+        return []
+    return [f[:-4] for f in os.listdir(model_path) if f.endswith('.pkl') and not f.endswith('_scaler.pkl')]
+
+
+def _is_saved_model_valid(model_path, model_name):
+    metadata_file = os.path.join(model_path, f"{model_name}_metadata.json")
+    if not os.path.exists(metadata_file):
+        return False
+    try:
+        with open(metadata_file, 'r', encoding='utf-8') as f:
+            metadata = json.load(f)
+        feature_names = metadata.get('feature_names')
+        return isinstance(feature_names, list) and len(feature_names) > 0
+    except Exception:
+        return False
+
+
+def _find_default_dataset_paths():
+    data_paths = [
+        current_app.config.get('DATA_PATH', './data/datasets'),
+        './data/datasets',
+        './data'
+    ]
+
+    for data_path in data_paths:
+        rainfall_path = os.path.join(data_path, 'rainfall_data.csv')
+        flood_path = os.path.join(data_path, 'flood_impact_data.csv')
+        if os.path.exists(rainfall_path) and os.path.exists(flood_path):
+            return rainfall_path, flood_path
+
+    return None, None
+
+
+def initialize_default_model(app=None):
+    global current_model
+
+    if app is None:
+        raise ValueError('App instance is required to initialize the default model')
+
+    with app.app_context():
+        model_path = current_app.config['MODEL_PATH']
+        saved_models = [m for m in _list_saved_models(model_path) if _is_saved_model_valid(model_path, m)]
+
+        if saved_models:
+            current_model = FloodPredictionModel(model_path=model_path)
+            current_model.load(saved_models[0])
+            return current_model
+
+        rainfall_path, flood_path = _find_default_dataset_paths()
+        if not rainfall_path or not flood_path:
+            return None
+
+        processor = DataProcessor()
+        rainfall_df = processor.load_csv(rainfall_path)
+        flood_df = processor.load_csv(flood_path)
+
+        is_valid, message = processor.validate_dataset(rainfall_df)
+        if not is_valid:
+            raise ValueError(f'Rainfall dataset invalid: {message}')
+
+        is_valid, message = processor.validate_dataset(flood_df)
+        if not is_valid:
+            raise ValueError(f'Flood impact dataset invalid: {message}')
+
+        combined_df = processor.split_datasets(rainfall_df, flood_df)
+        combined_df = processor.create_features(combined_df)
+
+        if 'timestamp' in combined_df.columns:
+            combined_df = combined_df.drop(columns=['timestamp'])
+
+        X, y = processor.preprocess_data(
+            combined_df,
+            target_column='risk_level',
+            drop_columns=['location', 'month', 'latitude', 'longitude']
+        )
+
+        current_model = FloodPredictionModel(
+            model_path=current_app.config['MODEL_PATH']
+        )
+        current_model.train(X, y, test_size=0.2)
+        current_model.save('default_trained_model')
+        return current_model
+
+
 @training_bp.route('/train', methods=['POST'])
 def train_model():
     """

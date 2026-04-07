@@ -32,8 +32,8 @@ ml-service/
 │   └── data_loader.py            # CSV data loading utilities
 │
 └── data/
-    ├── sample_rainfall_data.csv       # Sample rainfall dataset
-    └── sample_flood_impact_data.csv   # Sample flood impact dataset
+    ├── sri_lanka_flood_dataset_district.csv       # District-level flood dataset for training
+    └── sri_lanka_rainfall_forecast_district.csv   # District-level rainfall forecast dataset for training
 ```
 
 ## 🚀 Quick Start
@@ -416,8 +416,8 @@ pip install -r requirements.txt
 - **README.md** - Detailed service documentation
 - **INTEGRATION.md** - Backend integration guide with code examples
 - **example_train.py** - Complete working example of training and prediction
-- **sample_rainfall_data.csv** - Example training dataset format
-- **sample_flood_impact_data.csv** - Example target data format
+- **sri_lanka_flood_dataset_district.csv** - District-level flood training dataset
+- **sri_lanka_rainfall_forecast_district.csv** - District-level rainfall forecast dataset
 
 ## ✨ Key Features
 

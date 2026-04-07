@@ -77,27 +77,82 @@ export class MLModelService {
   /**
    * Make a flood prediction for a single location
    */
+  static _buildFeaturePayload(featureNames, inputs) {
+    if (!Array.isArray(featureNames) || featureNames.length === 0) {
+      return {
+        rainfall: parseFloat(inputs.rainfall),
+        latitude: parseFloat(inputs.latitude),
+        longitude: parseFloat(inputs.longitude),
+        water_level: parseFloat(inputs.waterLevel),
+        humidity: parseFloat(inputs.humidity),
+        location: inputs.location
+      };
+    }
+
+    return featureNames.reduce((payload, name) => {
+      const normalized = String(name).toLowerCase();
+      if (normalized === 'predicted_rainfall_mm' || normalized === 'rainfall_mm' || normalized === 'rainfall') {
+        payload[name] = parseFloat(inputs.rainfall);
+      } else if (normalized === 'water_level_m' || normalized === 'water_level' || normalized === 'waterlevel') {
+        payload[name] = parseFloat(inputs.waterLevel);
+      } else if (normalized === 'latitude') {
+        payload[name] = parseFloat(inputs.latitude);
+      } else if (normalized === 'longitude') {
+        payload[name] = parseFloat(inputs.longitude);
+      } else if (normalized === 'humidity') {
+        payload[name] = parseFloat(inputs.humidity || 75);
+      } else if (normalized === 'month') {
+        payload[name] = new Date().getMonth() + 1;
+      } else if (normalized === 'location' || normalized === 'district') {
+        payload[name] = inputs.location;
+      } else {
+        payload[name] = 0;
+      }
+      return payload;
+    }, {});
+  }
+
   static async predictFloodRisk(location, rainfall, waterLevel, latitude, longitude, humidity = 75) {
     try {
+      let featureNames = [];
+      try {
+        const modelInfo = await MLModelService.getModelInfo();
+        featureNames = modelInfo.feature_names || [];
+      } catch (infoError) {
+        console.warn('Could not determine model feature names:', infoError.message);
+      }
+
+      const features = MLModelService._buildFeaturePayload(featureNames, {
+        location,
+        latitude,
+        longitude,
+        rainfall,
+        waterLevel,
+        humidity
+      });
+
       const response = await fetch(`${ML_SERVICE_URL}/api/ml/prediction/predict`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          features: {
-            rainfall: parseFloat(rainfall),
-            water_level: parseFloat(waterLevel),
-            latitude: parseFloat(latitude),
-            longitude: parseFloat(longitude),
-            humidity: parseFloat(humidity),
-            location: location
-          }
-        })
+        body: JSON.stringify({ features })
       });
 
-      if (!response.ok) throw new Error('Failed to make prediction');
-      
-      const result = await response.json();
-      
+      const text = await response.text();
+      let result = {};
+      try {
+        result = text ? JSON.parse(text) : {};
+      } catch (parseError) {
+        console.warn('ML prediction response is not JSON:', text);
+      }
+
+      if (!response.ok) {
+        const details = result.details ? ` Details: ${result.details}` : '';
+        const rawText = !result.error && !result.message ? ` Raw response: ${text}` : '';
+        throw new Error(
+          `${result.error || result.message || `ML Service error ${response.status}`}${details}${rawText}`
+        );
+      }
+
       return {
         location,
         latitude,

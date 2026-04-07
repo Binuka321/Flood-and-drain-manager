@@ -45,8 +45,8 @@
 
 | File | Records | Columns | Purpose |
 |------|---------|---------|---------|
-| **data/sample_rainfall_data.csv** | 60 | location, month, rainfall, lat, lon | Training features |
-| **data/sample_flood_impact_data.csv** | 60 | location, month, risk_level, events, water_level | Training target |
+| **data/sri_lanka_flood_dataset_district.csv** | variable | timestamp, location_id, latitude, longitude, water_level_m, rainfall_mm, flow_rate_m3s, elevation_m, historical_risk, FRI, risk_level, district | Flood training dataset |
+| **data/sri_lanka_rainfall_forecast_district.csv** | variable | timestamp, predicted_rainfall_mm, district | Forecast rainfall data |
 
 ## 📚 Example Code
 
@@ -90,8 +90,8 @@ ml-service/
 │   └── data_loader.py                    # CSV Loading
 │
 ├── 📁 data/
-│   ├── sample_rainfall_data.csv          # Sample rainfall
-│   └── sample_flood_impact_data.csv      # Sample target
+│   ├── sri_lanka_flood_dataset_district.csv          # District-level flood training dataset
+│   └── sri_lanka_rainfall_forecast_district.csv      # District-level rainfall forecast dataset
 │
 ├── .env                                  # Environment vars
 └── .gitignore                            # Git ignore

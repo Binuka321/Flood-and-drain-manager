@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from models.flood_model import FloodPredictionModel
 import numpy as np
 import pandas as pd
@@ -31,27 +31,69 @@ def predict():
     }
     """
     try:
-        from routes.training import current_model as model
+        from routes.training import current_model as model, initialize_default_model
         
+        if model is None or not model.is_trained:
+            try:
+                model = initialize_default_model(current_app) or model
+            except Exception as init_error:
+                print('⚠️ Default model initialization failed during prediction:', init_error)
+
         if model is None or not model.is_trained:
             return jsonify({
                 'error': 'Model not trained',
                 'message': 'Please train a model first'
             }), 400
         
-        data = request.get_json()
-        if not data or 'features' not in data:
-            return jsonify({'error': 'Missing features in request'}), 400
+        data = request.get_json(force=True, silent=True)
+        if data is None:
+            return jsonify({
+                'error': 'Invalid JSON payload',
+                'message': 'Could not parse request body'
+            }), 400
+        
+        if 'features' not in data:
+            return jsonify({
+                'error': 'Missing features in request',
+                'message': 'Request JSON must include a features object or list',
+                'received_payload': data
+            }), 400
         
         features = data['features']
         
         # Handle single prediction (dict)
         if isinstance(features, dict):
-            prediction, confidence = model.predict_single(features)
+            try:
+                prediction, confidence = model.predict_single(features)
+            except KeyError as ke:
+                return jsonify({
+                    'error': 'Missing feature for model prediction',
+                    'details': str(ke),
+                    'expected_features': model.feature_names,
+                    'provided_features': list(features.keys())
+                }), 400
+            except ValueError as ve:
+                print('⚠️ Prediction input invalid:', str(ve))
+                print('   expected_features:', model.feature_names)
+                print('   provided_features:', list(features.keys()))
+                return jsonify({
+                    'error': 'Prediction input invalid',
+                    'details': str(ve),
+                    'expected_features': model.feature_names,
+                    'provided_features': list(features.keys())
+                }), 400
+
+            prediction_value = prediction
+            prediction_label = None
+            if isinstance(prediction_value, str):
+                prediction_label = prediction_value
+            else:
+                prediction_label = _get_risk_label(prediction_value)
+
             return jsonify({
-                'prediction': int(prediction),
+                'prediction': prediction_value,
                 'confidence': float(confidence),
-                'prediction_label': _get_risk_label(prediction),
+                'prediction_label': prediction_label,
                 'details': {
                     'features_used': model.feature_names,
                     'model_type': model.model_type,

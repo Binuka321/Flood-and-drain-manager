@@ -1,26 +1,26 @@
 {
-  "timestamp": "2026-04-06T16:54:55.443488",
+  "timestamp": "2026-04-07T08:49:57.171037",
   "training_data": {
-    "total_records": 200,
+    "total_records": 4200,
     "date_range": {
-      "start": "1/1/2025 0:00",
-      "end": "1/9/2025 7:00"
+      "start": "2025-01-01 00:00:00",
+      "end": "2025-01-07 23:00:00"
     },
     "locations": 5,
     "risk_distribution": {
-      "Medium": 118,
-      "Low": 42,
-      "High": 40
+      "Medium": 2500,
+      "High": 900,
+      "Low": 800
     }
   },
   "models": {
     "random_forest": {
       "type": "Random Forest",
-      "train_accuracy": 0.9875,
-      "test_accuracy": 0.75,
-      "precision": 0.76,
-      "recall": 0.75,
-      "f1_score": 0.735042735042735,
+      "train_accuracy": 1.0,
+      "test_accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
       "hyperparameters": {
         "n_estimators": 100,
         "max_depth": 15,
@@ -28,20 +28,22 @@
         "random_state": 42
       },
       "feature_importance": {
-        "water_level_m": 0.3413403913133581,
-        "rainfall_mm": 0.24019472122592725,
-        "flow_rate_m3s": 0.10039011168137046,
-        "elevation_m": 0.0822201704039093,
-        "historical_risk": 0.23585460537543487
+        "predicted_rainfall_mm": 0.1162973096261804,
+        "latitude": 0.13861674148770206,
+        "longitude": 0.13918096011238382,
+        "water_level_m": 0.2777350950416733,
+        "flow_rate_m3s": 0.12266406261461683,
+        "elevation_m": 0.08811280217999186,
+        "historical_risk": 0.11739302893745174
       }
     },
     "gradient_boosting": {
       "type": "Gradient Boosting",
       "train_accuracy": 1.0,
-      "test_accuracy": 0.75,
-      "precision": 0.75,
-      "recall": 0.75,
-      "f1_score": 0.75,
+      "test_accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
       "hyperparameters": {
         "n_estimators": 100,
         "learning_rate": 0.1,
@@ -49,17 +51,21 @@
         "random_state": 42
       },
       "feature_importance": {
-        "water_level_m": 0.3717539547144619,
-        "rainfall_mm": 0.2538496365031816,
-        "flow_rate_m3s": 0.09530423755481233,
-        "elevation_m": 0.005117413580684933,
-        "historical_risk": 0.2739747576468593
+        "predicted_rainfall_mm": 0.08531405720252493,
+        "latitude": 0.09228514841852355,
+        "longitude": 0.14103397306603574,
+        "water_level_m": 0.27898492029473065,
+        "flow_rate_m3s": 0.12665281178169258,
+        "elevation_m": 0.05591987396541233,
+        "historical_risk": 0.2198092152710804
       }
     }
   },
   "features": [
+    "predicted_rainfall_mm",
+    "latitude",
+    "longitude",
     "water_level_m",
-    "rainfall_mm",
     "flow_rate_m3s",
     "elevation_m",
     "historical_risk"
@@ -72,9 +78,9 @@
   ],
   "training_statistics": {
     "best_model": "random_forest",
-    "best_model_accuracy": 0.75,
-    "random_forest_accuracy": 0.75,
-    "gradient_boosting_accuracy": 0.75,
+    "best_model_accuracy": 1.0,
+    "random_forest_accuracy": 1.0,
+    "gradient_boosting_accuracy": 1.0,
     "accuracy_difference": 0.0
   }
 }
