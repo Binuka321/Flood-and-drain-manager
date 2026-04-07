@@ -9,7 +9,7 @@ const predictionSchema = new mongoose.Schema({
   humidity: { type: Number, default: 75 },
   // ML Model Prediction Data
   mlPrediction: {
-    prediction: Number,        // 0-3 for risk levels
+    prediction: mongoose.Schema.Types.Mixed, // numeric or label output from ML model
     predictionLabel: String,   // 'Low Risk', 'Moderate Risk', etc.
     confidence: Number,        // 0-1 confidence score
     modelVersion: String,      // Model version used

@@ -68,7 +68,7 @@ router.post('/generate-ml', async (req, res) => {
           riskLevel: pred.predictionLabel,
           updatedAt: new Date()
         },
-        { upsert: true, new: true }
+        { upsert: true, returnDocument: 'after' }
       );
       savedPredictions.push(saved);
     }
@@ -235,6 +235,80 @@ router.get('/location/:location', async (req, res) => {
     res.status(500).json({ 
       error: 'Failed to fetch prediction',
       details: error.message 
+    });
+  }
+});
+
+/**
+ * Make a single ML prediction and save it to MongoDB
+ * POST /api/prediction/predict
+ */
+router.post('/predict', async (req, res) => {
+  try {
+    const {
+      location,
+      latitude,
+      longitude,
+      rainfall,
+      waterLevel,
+      humidity = 75
+    } = req.body;
+
+    if (!location || latitude === undefined || longitude === undefined || rainfall === undefined || waterLevel === undefined) {
+      return res.status(400).json({
+        error: 'Missing required prediction fields',
+        required: ['location', 'latitude', 'longitude', 'rainfall', 'waterLevel']
+      });
+    }
+
+    const mlPrediction = await MLModelService.predictFloodRisk(
+      location,
+      rainfall,
+      waterLevel,
+      latitude,
+      longitude,
+      humidity
+    );
+
+    let modelInfo = { version: 'unknown', model_type: 'unknown' };
+    try {
+      modelInfo = await MLModelService.getModelInfo();
+    } catch (err) {
+      console.warn('Could not fetch model info:', err.message);
+    }
+
+    const savedPrediction = await Prediction.findOneAndUpdate(
+      { location },
+      {
+        location,
+        latitude,
+        longitude,
+        rainfall,
+        waterLevel,
+        humidity,
+        mlPrediction: {
+          prediction: mlPrediction.prediction,
+          predictionLabel: mlPrediction.predictionLabel,
+          confidence: mlPrediction.confidence,
+          modelVersion: modelInfo.version,
+          modelType: modelInfo.model_type
+        },
+        riskLevel: mlPrediction.predictionLabel,
+        updatedAt: new Date()
+      },
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
+    );
+
+    res.json({
+      status: 'success',
+      message: 'ML prediction saved to MongoDB',
+      data: savedPrediction
+    });
+  } catch (error) {
+    console.error('ML prediction save error:', error);
+    res.status(500).json({
+      error: 'Failed to make and save ML prediction',
+      details: error.message
     });
   }
 });

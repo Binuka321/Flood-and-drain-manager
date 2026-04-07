@@ -38,6 +38,59 @@ export default function FloodMapApp({ onBack }) {
   const [riskMap, setRiskMap] = useState({});
   const [selectedDistricts, setSelectedDistricts] = useState({});
   const [districts, setDistricts] = useState(null);
+  const [mlLocation, setMlLocation] = useState('Colombo');
+  const [mlLatitude, setMlLatitude] = useState(6.9271);
+  const [mlLongitude, setMlLongitude] = useState(79.8612);
+  const [mlRainfall, setMlRainfall] = useState(30);
+  const [mlWaterLevel, setMlWaterLevel] = useState(2.5);
+  const [mlHumidity, setMlHumidity] = useState(75);
+  const [mlPredictionResult, setMlPredictionResult] = useState(null);
+  const [mlLoading, setMlLoading] = useState(false);
+  const [mlError, setMlError] = useState(null);
+
+  const runMlPrediction = async () => {
+    setMlError(null);
+    setMlLoading(true);
+    setMlPredictionResult(null);
+
+    try {
+      const response = await fetch('/api/prediction/predict', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          location: mlLocation,
+          latitude: mlLatitude,
+          longitude: mlLongitude,
+          rainfall: mlRainfall,
+          waterLevel: mlWaterLevel,
+          humidity: mlHumidity
+        })
+      });
+
+      const text = await response.text();
+      let data = {};
+
+      if (text) {
+        try {
+          data = JSON.parse(text);
+        } catch (parseError) {
+          throw new Error(`Unexpected response: ${text}`);
+        }
+      }
+
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'Prediction request failed');
+      }
+
+      setMlPredictionResult(data.data);
+    } catch (error) {
+      setMlError(error.message || 'Unable to request ML prediction');
+    } finally {
+      setMlLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetch('/src/data/sri_lanka_districts.geojson')
@@ -242,7 +295,105 @@ export default function FloodMapApp({ onBack }) {
             <b style={{color:"black"}}>HIGH</b> - Below 20m elevation, rainfall 120mm
           </div>
         </div>
-        
+
+        <div style={{ marginTop: 20, padding: 15, background: '#fff', border: '1px solid #ddd', borderRadius: '8px' }}>
+          <h3 style={{ marginBottom: 12, color: 'black' }}>Test ML Prediction</h3>
+          <label style={{ display: 'block', marginBottom: 6, color: 'black' }}>Location</label>
+          <input
+            type="text"
+            value={mlLocation}
+            onChange={e => setMlLocation(e.target.value)}
+            style={{ width: '100%', padding: 8, marginBottom: 10, boxSizing: 'border-box' }}
+          />
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: 6, color: 'black' }}>Latitude</label>
+              <input
+                type="number"
+                value={mlLatitude}
+                onChange={e => setMlLatitude(parseFloat(e.target.value))}
+                style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: 6, color: 'black' }}>Longitude</label>
+              <input
+                type="number"
+                value={mlLongitude}
+                onChange={e => setMlLongitude(parseFloat(e.target.value))}
+                style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: 6, color: 'black' }}>Rainfall (mm)</label>
+              <input
+                type="number"
+                value={mlRainfall}
+                onChange={e => setMlRainfall(parseFloat(e.target.value))}
+                style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: 6, color: 'black' }}>Water Level</label>
+              <input
+                type="number"
+                value={mlWaterLevel}
+                onChange={e => setMlWaterLevel(parseFloat(e.target.value))}
+                style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}
+              />
+            </div>
+          </div>
+
+          <label style={{ display: 'block', marginTop: 10, marginBottom: 6, color: 'black' }}>Humidity (%)</label>
+          <input
+            type="number"
+            value={mlHumidity}
+            onChange={e => setMlHumidity(parseFloat(e.target.value))}
+            style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}
+          />
+
+          <button
+            onClick={runMlPrediction}
+            disabled={mlLoading}
+            style={{
+              width: '100%',
+              padding: '10px',
+              marginTop: '12px',
+              background: '#1D4ED8',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            {mlLoading ? 'Running prediction...' : 'Run ML Prediction'}
+          </button>
+
+          {mlError && (
+            <div style={{ marginTop: 12, color: 'red', fontSize: '13px' }}>
+              {mlError}
+            </div>
+          )}
+
+          {mlPredictionResult && (
+            <div style={{ marginTop: 16, padding: 12, background: '#f7fafc', border: '1px solid #e2e8f0', borderRadius: '6px' }}>
+              <h4 style={{ margin: 0, marginBottom: 8, color: 'black' }}>Prediction Result</h4>
+              <div style={{ fontSize: '14px', color: '#111' }}>
+                <div><strong>Location:</strong> {mlPredictionResult.location}</div>
+                <div><strong>Risk:</strong> {mlPredictionResult.mlPrediction?.predictionLabel || mlPredictionResult.riskLevel}</div>
+                <div><strong>Confidence:</strong> {Math.round((mlPredictionResult.mlPrediction?.confidence ?? 0) * 100)}%</div>
+                <div><strong>Rainfall:</strong> {mlPredictionResult.rainfall} mm</div>
+                <div><strong>Water Level:</strong> {mlPredictionResult.waterLevel}</div>
+                <div><strong>Saved:</strong> {new Date(mlPredictionResult.updatedAt).toLocaleString()}</div>
+              </div>
+            </div>
+          )}
+        </div>
+
         <p style={{ marginTop: "15px", fontSize: "12px", color: "#666" }}>
           Selected: <b>{Object.values(selectedDistricts).filter(Boolean).length}/25</b> districts
         </p>

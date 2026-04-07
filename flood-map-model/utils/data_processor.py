@@ -99,16 +99,29 @@ class DataProcessor:
             Combined DataFrame
         """
         # Merge datasets on location
-        merged_df = pd.merge(
-            rainfall_df,
-            flood_impact_df,
-            on=['location', 'month'],
-            how='inner'
-        )
-        
+        if {'location', 'month'}.issubset(set(rainfall_df.columns)) and {'location', 'month'}.issubset(set(flood_impact_df.columns)):
+            merged_df = pd.merge(
+                rainfall_df,
+                flood_impact_df,
+                on=['location', 'month'],
+                how='inner'
+            )
+        elif {'timestamp', 'district'}.issubset(set(rainfall_df.columns)) and {'timestamp', 'district'}.issubset(set(flood_impact_df.columns)):
+            merged_df = pd.merge(
+                rainfall_df,
+                flood_impact_df,
+                on=['timestamp', 'district'],
+                how='inner'
+            )
+        else:
+            raise ValueError(
+                "No compatible keys found to merge datasets. "
+                "Expected either ['location','month'] or ['timestamp','district'] in both datasets."
+            )
+
         if merged_df.empty:
-            raise ValueError("No matching records between datasets. Check location and month columns.")
-        
+            raise ValueError("No matching records between datasets. Check merge keys and dataset alignment.")
+
         return merged_df
     
     @staticmethod

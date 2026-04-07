@@ -36,8 +36,8 @@ ml-service/ (Ready to use)
 │   └── utils/data_loader.py      (CSV utilities)
 │
 ├── Sample Data
-│   ├── data/sample_rainfall_data.csv          (60 records)
-│   └── data/sample_flood_impact_data.csv      (60 records)
+│   ├── data/sri_lanka_flood_dataset_district.csv          (district-level historical flood dataset)
+│   └── data/sri_lanka_rainfall_forecast_district.csv      (district-level rainfall forecast dataset)
 │
 ├── Documentation
 │   ├── README.md                 (Full API docs)

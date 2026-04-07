@@ -29,6 +29,8 @@ class FloodPredictionModel:
         self.metrics = {}
         self.feature_names = None
         self.model_version = None
+        self.label_mapping = None
+        self.inverse_label_mapping = None
         
         os.makedirs(model_path, exist_ok=True)
         
@@ -75,7 +77,19 @@ class FloodPredictionModel:
             X = X.values
         
         if isinstance(y, pd.Series):
-            y = y.values
+            if not pd.api.types.is_numeric_dtype(y):
+                unique_labels = list(y.unique())
+                self.label_mapping = {label: idx for idx, label in enumerate(unique_labels)}
+                self.inverse_label_mapping = {idx: label for label, idx in self.label_mapping.items()}
+                y = y.map(self.label_mapping).values
+            else:
+                y = y.values
+        elif isinstance(y, np.ndarray):
+            if y.dtype.type is np.str_ or y.dtype.type is np.object_:
+                unique_labels = list(pd.Series(y).unique())
+                self.label_mapping = {label: idx for idx, label in enumerate(unique_labels)}
+                self.inverse_label_mapping = {idx: label for label, idx in self.label_mapping.items()}
+                y = pd.Series(y).map(self.label_mapping).values
         
         # Split data
         X_train, X_test, y_train, y_test = train_test_split(
@@ -153,8 +167,19 @@ class FloodPredictionModel:
         X = np.array([feature_values])
         
         prediction, probability = self.predict(X)
+        raw_pred = prediction[0]
         
-        return int(prediction[0]), float(probability[0].max())
+        if self.inverse_label_mapping is not None:
+            try:
+                decoded_label = self.inverse_label_mapping.get(int(raw_pred), raw_pred)
+            except Exception:
+                decoded_label = raw_pred
+            return decoded_label, float(probability[0].max())
+
+        try:
+            return int(raw_pred), float(probability[0].max())
+        except Exception:
+            return raw_pred, float(probability[0].max())
     
     def save(self, filename=None):
         """
@@ -182,6 +207,7 @@ class FloodPredictionModel:
         metadata = {
             'model_type': self.model_type,
             'feature_names': self.feature_names,
+            'label_mapping': self.label_mapping,
             'metrics': self.metrics,
             'version': self.model_version,
             'created_at': datetime.now().isoformat()
@@ -221,9 +247,14 @@ class FloodPredictionModel:
         metadata_file = os.path.join(self.model_path, f"{filename}_metadata.json")
         if os.path.exists(metadata_file):
             import json
-            with open(metadata_file, 'r') as f:
+            with open(metadata_file, 'r', encoding='utf-8') as f:
                 metadata = json.load(f)
                 self.feature_names = metadata.get('feature_names')
+                self.label_mapping = metadata.get('label_mapping')
+                self.inverse_label_mapping = {
+                    int(value): key
+                    for key, value in (self.label_mapping or {}).items()
+                } if self.label_mapping else None
                 self.metrics = metadata.get('metrics', {})
                 self.model_version = metadata.get('version')
         

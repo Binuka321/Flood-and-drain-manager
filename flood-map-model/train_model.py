@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Training script to train the ML model with sample flood data
-Loads flood_dataset_sample_v2.csv and trains Random Forest and Gradient Boosting models
+Training script to train the ML model with district-level flood and rainfall forecast datasets.
+Uses `sri_lanka_flood_dataset_district.csv` and `sri_lanka_rainfall_forecast_district.csv` if available.
 """
 
 import pandas as pd
@@ -17,21 +17,47 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from models.flood_model import FloodPredictionModel
 
-def load_training_data(csv_path):
-    """Load and prepare training data from CSV"""
-    print(f"📂 Loading training data from: {csv_path}")
-    
-    df = pd.read_csv(csv_path)
-    print(f"✓ Loaded {len(df)} records")
-    
-    # Display data info
+def load_training_data(flood_csv_path, forecast_csv_path):
+    """Load and prepare training data from the district-level flood and rainfall forecast CSVs."""
+    print(f"📂 Loading flood dataset from: {flood_csv_path}")
+    print(f"📂 Loading rainfall forecast dataset from: {forecast_csv_path}")
+
+    flood_df = pd.read_csv(flood_csv_path, parse_dates=['timestamp'])
+    forecast_df = pd.read_csv(forecast_csv_path, parse_dates=['timestamp'])
+
+    print(f"✓ Loaded {len(flood_df)} flood records")
+    print(f"✓ Loaded {len(forecast_df)} forecast records")
+
+    if 'district' not in flood_df.columns:
+        raise ValueError("Flood dataset must contain a 'district' column")
+    if 'district' not in forecast_df.columns:
+        raise ValueError("Rainfall forecast dataset must contain a 'district' column")
+    if 'timestamp' not in flood_df.columns or 'timestamp' not in forecast_df.columns:
+        raise ValueError("Both datasets must contain a 'timestamp' column")
+
+    combined = pd.merge(
+        flood_df,
+        forecast_df,
+        on=['timestamp', 'district'],
+        how='inner',
+        suffixes=('', '_forecast')
+    )
+
+    if combined.empty:
+        raise ValueError('Merged dataset is empty. Check timestamp and district alignment.')
+
+    if 'location' not in combined.columns:
+        combined['location'] = combined['district']
+
+    print(f"✓ Merged dataset contains {len(combined)} records")
+
     print(f"\n📊 Data Overview:")
-    print(f"   - Columns: {', '.join(df.columns.tolist())}")
-    print(f"   - Date range: {df['timestamp'].min()} to {df['timestamp'].max()}")
-    print(f"   - Locations: {df['location_id'].nunique()} unique")
-    print(f"   - Risk levels: {df['risk_level'].unique().tolist()}")
-    
-    return df
+    print(f"   - Columns: {', '.join(combined.columns.tolist())}")
+    print(f"   - Date range: {combined['timestamp'].min()} to {combined['timestamp'].max()}")
+    print(f"   - Districts: {combined['district'].nunique()} unique")
+    print(f"   - Risk levels: {combined['risk_level'].unique().tolist()}")
+
+    return combined
 
 def prepare_features_and_labels(df):
     """Prepare features and labels for training"""
@@ -41,11 +67,24 @@ def prepare_features_and_labels(df):
     risk_mapping = {'Low': 0, 'Medium': 1, 'High': 2, 'Very High': 3}
     df['risk_numeric'] = df['risk_level'].map(risk_mapping)
     
-    # Select features for the model
-    feature_columns = ['water_level_m', 'rainfall_mm', 'flow_rate_m3s', 'elevation_m', 'historical_risk']
+    # Select features for the model. Use forecast rainfall as the main input
+    feature_columns = [
+        'predicted_rainfall_mm',
+        'latitude',
+        'longitude',
+        'water_level_m',
+        'flow_rate_m3s',
+        'elevation_m',
+        'historical_risk'
+    ]
     
-    X = df[feature_columns].values
-    y = df['risk_numeric'].values
+    # Validate feature availability
+    missing = [col for col in feature_columns if col not in df.columns]
+    if missing:
+        raise ValueError(f"Missing required feature columns: {missing}")
+
+    X = df[feature_columns]
+    y = df['risk_numeric']
     
     print(f"   ✓ Features: {feature_columns}")
     print(f"   ✓ Target: risk_level (numeric)")
@@ -208,15 +247,23 @@ def main():
     data_dir = os.path.join(script_dir, 'data')
     models_dir = os.path.join(script_dir, 'models')
     
-    # Load training data
-    csv_path = os.path.join(data_dir, 'flood_dataset_sample_v2.csv')
-    
-    if not os.path.exists(csv_path):
-        print(f"❌ Error: Training data not found at {csv_path}")
+    # Load training data from the new district flood dataset and rainfall forecast dataset
+    flood_csv = os.path.join(data_dir, 'sri_lanka_flood_dataset_district.csv')
+    forecast_csv = os.path.join(data_dir, 'sri_lanka_rainfall_forecast_district.csv')
+    fallback_csv = os.path.join(data_dir, 'flood_dataset_sample_v2.csv')
+
+    if os.path.exists(flood_csv) and os.path.exists(forecast_csv):
+        df = load_training_data(flood_csv, forecast_csv)
+    elif os.path.exists(fallback_csv):
+        print(f"⚠️ New dataset files not found, falling back to legacy dataset: {fallback_csv}")
+        df = pd.read_csv(fallback_csv)
+    else:
+        print(f"❌ Error: Training data not found. Expected either:")
+        print(f"   - {flood_csv}")
+        print(f"   - {forecast_csv}")
+        print(f"or fallback dataset: {fallback_csv}")
         return False
-    
-    df = load_training_data(csv_path)
-    
+
     # Prepare features and labels
     X, y, feature_columns = prepare_features_and_labels(df)
     

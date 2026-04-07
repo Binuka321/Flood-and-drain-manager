@@ -4,7 +4,7 @@ from config import config
 import os
 
 # Import blueprints
-from routes.training import training_bp
+from routes.training import training_bp, initialize_default_model
 from routes.prediction import prediction_bp
 
 def create_app(config_name=None):
@@ -25,6 +25,16 @@ def create_app(config_name=None):
     # Register blueprints
     app.register_blueprint(training_bp, url_prefix='/api/ml/training')
     app.register_blueprint(prediction_bp, url_prefix='/api/ml/prediction')
+
+    # Attempt to initialize or train a default model on startup
+    try:
+        model = initialize_default_model(app)
+        if model is not None and model.is_trained:
+            print(f'✅ Default ML model initialized: {model.model_version}')
+        else:
+            print('⚠️ No default model initialized. Start the service and train a model manually.')
+    except Exception as exc:
+        print('⚠️ ML model startup initialization failed:', str(exc))
     
     # Health check endpoint
     @app.route('/api/ml/health', methods=['GET'])
