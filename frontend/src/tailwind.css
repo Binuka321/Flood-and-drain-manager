@@ -1,0 +1,3 @@
+/* Tailwind v4 + Vite: @tailwindcss/vite discovers class usage from the module graph */
+@import "tailwindcss";
+@import "tw-animate-css";

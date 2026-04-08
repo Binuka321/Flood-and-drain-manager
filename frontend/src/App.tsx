@@ -54,7 +54,7 @@ export default function App() {
         {user.role === 'admin' && showAdmin ? (
           <AdminFloodMapCreator token={user.token} />
         ) : (
-          <FloodAlertDashboard />
+          <FloodAlertDashboard isAdmin={user.role === "admin"} />
         )}
       </div>
     </div>

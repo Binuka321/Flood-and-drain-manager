@@ -1,11 +1,18 @@
 import React, { useState } from "react";
 // @ts-ignore
 import FloodMapApp from "./FloodMap/FloodMapApp.jsx";
-import PostFloodRationDistribution from "./PostFloodRationDistribution/PostFloodRationDistribution.tsx";
+import PostFloodRationDistribution from "./PostFloodRationDistribution/PostFloodRationDistribution";
+import { Dashboard } from "./Drain_management/Dashboard";
 
-export default function FloodAlertDashboard() {
+export interface FloodAlertDashboardProps {
+  /** Drain management is available only for admin accounts */
+  isAdmin?: boolean;
+}
+
+export default function FloodAlertDashboard({ isAdmin = false }: FloodAlertDashboardProps) {
   const [showFloodMap, setShowFloodMap] = useState(false);
   const [showRationDistribution, setShowRationDistribution] = useState(false);
+  const [showDrainManagement, setShowDrainManagement] = useState(false);
 
   if (showFloodMap) {
     return <FloodMapApp onBack={() => setShowFloodMap(false)} />;
@@ -13,6 +20,28 @@ export default function FloodAlertDashboard() {
 
   if (showRationDistribution) {
     return <PostFloodRationDistribution />;
+  }
+
+  if (showDrainManagement && isAdmin) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background text-foreground">
+        <header className="shrink-0 flex flex-wrap items-center justify-between gap-3 border-b border-border bg-slate-900 px-4 py-3 text-white">
+          <button
+            type="button"
+            onClick={() => setShowDrainManagement(false)}
+            className="rounded-lg bg-slate-700 px-4 py-2 text-sm font-medium hover:bg-slate-600"
+          >
+            ← Main menu
+          </button>
+          <span className="text-sm text-slate-300">
+            Drain management & flood level monitor
+          </span>
+        </header>
+        <div className="min-h-0 flex-1 overflow-auto">
+          <Dashboard />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -45,11 +74,17 @@ export default function FloodAlertDashboard() {
           <span className="relative z-10 group-hover:drop-shadow-lg transition-all duration-500">Flood map</span>
         </button>
 
-        <button className="group relative w-full aspect-square rounded-3xl font-bold text-2xl transition-all duration-500 transform hover:scale-110 bg-gradient-to-br from-green-600 to-green-800 shadow-2xl flex items-center justify-center border border-green-300/50 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-green-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-          <div className="absolute inset-0 bg-green-500 opacity-0 group-hover:opacity-30 blur-2xl transition-opacity duration-500"></div>
-          <span className="relative z-10 group-hover:drop-shadow-lg transition-all duration-500">Drain management and flood level monitor</span>
-        </button>
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => setShowDrainManagement(true)}
+            className="group relative w-full aspect-square rounded-3xl font-bold text-xl sm:text-2xl transition-all duration-500 transform hover:scale-110 bg-gradient-to-br from-green-600 to-green-800 shadow-2xl flex items-center justify-center border border-green-300/50 overflow-hidden cursor-pointer px-2 text-center leading-tight"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-green-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="absolute inset-0 bg-green-500 opacity-0 group-hover:opacity-30 blur-2xl transition-opacity duration-500"></div>
+            <span className="relative z-10 group-hover:drop-shadow-lg transition-all duration-500">Drain management and flood level monitor</span>
+          </button>
+        )}
 
         <button className="group relative w-full aspect-square rounded-3xl font-bold text-2xl transition-all duration-500 transform hover:scale-110 bg-gradient-to-br from-purple-600 to-purple-800 shadow-2xl flex items-center justify-center border border-purple-300/50 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-purple-400 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -57,7 +92,10 @@ export default function FloodAlertDashboard() {
           <span className="relative z-10 group-hover:drop-shadow-lg transition-all duration-500">Disease management</span>
         </button>
 
-        <button onClick={() => setShowRationDistribution(true)} className="group relative w-full aspect-square rounded-3xl font-bold text-2xl transition-all duration-500 transform hover:scale-110 bg-gradient-to-br from-orange-600 to-orange-800 shadow-2xl flex items-center justify-center border border-orange-300/50 overflow-hidden">
+        <button
+          onClick={() => setShowRationDistribution(true)}
+          className={`group relative w-full aspect-square rounded-3xl font-bold text-2xl transition-all duration-500 transform hover:scale-110 bg-gradient-to-br from-orange-600 to-orange-800 shadow-2xl flex items-center justify-center border border-orange-300/50 overflow-hidden ${!isAdmin ? "col-span-2 justify-self-center max-w-sm w-full" : ""}`}
+        >
           <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
           <div className="absolute inset-0 bg-orange-500 opacity-0 group-hover:opacity-30 blur-2xl transition-opacity duration-500"></div>
           <span className="relative z-10 group-hover:drop-shadow-lg transition-all duration-500">Post flood ration distribution</span>
