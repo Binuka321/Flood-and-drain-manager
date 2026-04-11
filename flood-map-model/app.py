@@ -1,5 +1,6 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
+from flask import send_from_directory
 from config import config
 import os
 
@@ -44,7 +45,11 @@ def create_app(config_name=None):
             'message': 'ML Microservice is running',
             'service': 'Flood Prediction ML Service'
         }), 200
-    
+    @app.route('/map')
+    def serve_map():
+        return send_from_directory('outputs', 'flood_map.html')
+
+
     @app.errorhandler(404)
     def not_found(error):
         return jsonify({'error': 'Endpoint not found'}), 404
