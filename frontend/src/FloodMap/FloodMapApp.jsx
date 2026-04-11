@@ -54,20 +54,20 @@ export default function FloodMapApp({ onBack }) {
     setMlPredictionResult(null);
 
     try {
-      const response = await fetch('/api/prediction/predict', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          location: mlLocation,
-          latitude: mlLatitude,
-          longitude: mlLongitude,
-          rainfall: mlRainfall,
-          waterLevel: mlWaterLevel,
-          humidity: mlHumidity
-        })
-      });
+      const response = await fetch('http://localhost:5000/api/ml/prediction/predict', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    features: {
+      rainfall: mlRainfall,
+      flood_events: 0,
+      rainfall_moving_avg: mlRainfall,
+      rainfall_deviation: 0
+    }
+  })
+});
 
       const text = await response.text();
       let data = {};
@@ -118,29 +118,49 @@ export default function FloodMapApp({ onBack }) {
     setSelectedDistricts({});
   };
 
-  const calculateRisk = () => {
-    const updated = {};
+  const calculateRisk = async () => {
+  const updated = {};
 
-    Object.entries(DISTRICTS).forEach(([district, data]) => {
-      if (!selectedDistricts[district]) return;
+  for (const [district] of Object.entries(DISTRICTS)) {
+    if (!selectedDistricts[district]) continue;
 
-      const elevation = data.elevation;
-      let level = "LOW";
+    try {
+      const response = await fetch('http://localhost:5000/api/ml/prediction/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          features: {
+            rainfall: Number(rainfall),
+            flood_events: 0,
+            rainfall_moving_avg: Number(rainfall),
+            rainfall_deviation: 0
+          }
+        })
+      });
+
+      const result = await response.json();
+
+      console.log("Prediction for", district, result); // DEBUG
+
+      const label = result.prediction_label;
+
       let color = "green";
+      if (label?.includes("High")) color = "red";
+      else if (label?.includes("Moderate")) color = "orange";
 
-      if (elevation < 20 && rainfall > 120) {
-        level = "HIGH";
-        color = "red";
-      } else if (elevation < 100 && rainfall > 80) {
-        level = "MODERATE";
-        color = "orange";
-      }
+      updated[district] = {
+        level: label,
+        color
+      };
 
-      updated[district] = { level, color };
-    });
+    } catch (err) {
+      console.error("Prediction error:", err);
+    }
+  }
 
-    setRiskMap(updated);
-  };
+  console.log("FINAL MAP DATA:", updated); // DEBUG
+  setRiskMap(updated);
+};
 
   const styleDistrict = feature => {
     const name = feature.properties.NAME_2;
