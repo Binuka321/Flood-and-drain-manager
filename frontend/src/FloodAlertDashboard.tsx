@@ -7,9 +7,11 @@ import { Dashboard } from "./Drain_management/Dashboard";
 export interface FloodAlertDashboardProps {
   /** Drain management is available only for admin accounts */
   isAdmin?: boolean;
+  /** JWT for sensor-package API calls */
+  authToken: string;
 }
 
-export default function FloodAlertDashboard({ isAdmin = false }: FloodAlertDashboardProps) {
+export default function FloodAlertDashboard({ isAdmin = false, authToken }: FloodAlertDashboardProps) {
   const [showFloodMap, setShowFloodMap] = useState(false);
   const [showRationDistribution, setShowRationDistribution] = useState(false);
   const [showDrainManagement, setShowDrainManagement] = useState(false);
@@ -38,7 +40,7 @@ export default function FloodAlertDashboard({ isAdmin = false }: FloodAlertDashb
           </span>
         </header>
         <div className="min-h-0 flex-1 overflow-auto">
-          <Dashboard />
+          <Dashboard authToken={authToken} />
         </div>
       </div>
     );
