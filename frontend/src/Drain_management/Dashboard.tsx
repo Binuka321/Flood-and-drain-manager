@@ -1,112 +1,60 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Activity, Waves, MapPin, AlertTriangle, CheckCircle } from 'lucide-react';
 import { SensorPackageCard, CreatePackageModal, MonitoringView } from './components';
 import type { SensorPackage } from './types';
+import { fetchSensorPackages, createSensorPackage, type CreateSensorPackageInput } from './sensorPackageApi';
 
 export type { SensorPackage } from './types';
 
-export function Dashboard() {
+export interface DashboardProps {
+  /** JWT from login; required to load and create sensor packages */
+  authToken: string;
+}
+
+export function Dashboard({ authToken }: DashboardProps) {
   const [view, setView] = useState<'overview' | 'monitoring'>('overview');
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [packages, setPackages] = useState<SensorPackage[]>([
-    {
-      id: '1',
-      name: 'River Station Alpha',
-      location: {
-        name: 'Kelani River - Bridge Point',
-        latitude: 6.9271,
-        longitude: 79.8612,
-        address: 'Colombo District, Western Province'
-      },
-      sensors: {
-        ultrasonic: 2,
-        flow: 1,
-        rain: 1,
-        turbidity: 1
-      },
-      boards: {
-        esp32: true,
-        uno: false
-      },
-      status: 'active',
-      lastUpdate: new Date(),
-      currentReadings: {
-        waterLevel: 2.4,
-        flowRate: 1.8,
-        rainfall: 12,
-        turbidity: 45
-      }
-    },
-    {
-      id: '2',
-      name: 'Urban Monitoring Point B',
-      location: {
-        name: 'Dehiwala Canal Junction',
-        latitude: 6.8520,
-        longitude: 79.8650,
-        address: 'Dehiwala-Mount Lavinia, Western Province'
-      },
-      sensors: {
-        ultrasonic: 1,
-        flow: 0,
-        rain: 2,
-        turbidity: 1
-      },
-      boards: {
-        esp32: true,
-        uno: true
-      },
-      status: 'warning',
-      lastUpdate: new Date(),
-      currentReadings: {
-        waterLevel: 3.8,
-        rainfall: 28,
-        turbidity: 120
-      }
-    },
-    {
-      id: '3',
-      name: 'Coastal Monitor Station',
-      location: {
-        name: 'Negombo Lagoon Outlet',
-        latitude: 7.2083,
-        longitude: 79.8358,
-        address: 'Negombo, Western Province'
-      },
-      sensors: {
-        ultrasonic: 1,
-        flow: 1,
-        rain: 1,
-        turbidity: 0
-      },
-      boards: {
-        esp32: true,
-        uno: false
-      },
-      status: 'active',
-      lastUpdate: new Date(),
-      currentReadings: {
-        waterLevel: 1.2,
-        flowRate: 0.9,
-        rainfall: 5
-      }
-    }
-  ]);
+  const [packages, setPackages] = useState<SensorPackage[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const activePackages = packages.filter(p => p.status === 'active').length;
   const warningPackages = packages.filter(p => p.status === 'warning').length;
 
-  const handleCreatePackage = (newPackage: Omit<SensorPackage, 'id' | 'status' | 'lastUpdate' | 'currentReadings'>) => {
-    const packageWithDefaults: SensorPackage = {
-      ...newPackage,
-      id: String(packages.length + 1),
-      status: 'active',
-      lastUpdate: new Date(),
-      currentReadings: {}
-    };
-    setPackages([...packages, packageWithDefaults]);
-    setShowCreateModal(false);
+  const loadPackages = useCallback(async () => {
+    if (!authToken) {
+      setLoadError('Not signed in.');
+      setLoading(false);
+      return;
+    }
+    setLoadError(null);
+    setLoading(true);
+    try {
+      const list = await fetchSensorPackages(authToken);
+      setPackages(list);
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : 'Could not load sensor packages');
+      setPackages([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [authToken]);
+
+  useEffect(() => {
+    loadPackages();
+  }, [loadPackages]);
+
+  const handleCreatePackage = async (newPackage: CreateSensorPackageInput) => {
+    setCreateError(null);
+    try {
+      const created = await createSensorPackage(authToken, newPackage);
+      setPackages((prev) => [...prev, created]);
+      setShowCreateModal(false);
+    } catch (e) {
+      setCreateError(e instanceof Error ? e.message : 'Failed to create package');
+    }
   };
 
   const handleViewMonitoring = (packageId: string) => {
@@ -143,13 +91,36 @@ export function Dashboard() {
               <p className="text-gray-600 mt-2">Real-time IoT sensor monitoring and flood prediction</p>
             </div>
             <button
-              onClick={() => setShowCreateModal(true)}
+              type="button"
+              onClick={() => {
+                setCreateError(null);
+                setShowCreateModal(true);
+              }}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-lg hover:shadow-xl"
             >
               + Create Sensor Package
             </button>
           </div>
         </div>
+
+        {loadError && (
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-800 text-sm flex flex-wrap items-center justify-between gap-3">
+            <span>{loadError}</span>
+            <button
+              type="button"
+              onClick={() => loadPackages()}
+              className="shrink-0 rounded-lg bg-red-100 px-3 py-1.5 text-sm font-medium text-red-900 hover:bg-red-200"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {loading && !loadError && (
+          <p className="text-gray-600 mb-6" role="status">
+            Loading sensor packages…
+          </p>
+        )}
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -205,6 +176,9 @@ export function Dashboard() {
         {/* Sensor Packages Grid */}
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Sensor Packages</h2>
+          {!loading && !loadError && packages.length === 0 && (
+            <p className="text-gray-600 text-sm mb-4">No sensor packages yet. Create one to get started.</p>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {packages.map(pkg => (
               <SensorPackageCard
@@ -219,8 +193,12 @@ export function Dashboard() {
 
       {showCreateModal && (
         <CreatePackageModal
-          onClose={() => setShowCreateModal(false)}
+          onClose={() => {
+            setCreateError(null);
+            setShowCreateModal(false);
+          }}
           onCreate={handleCreatePackage}
+          serverError={createError}
         />
       )}
     </div>

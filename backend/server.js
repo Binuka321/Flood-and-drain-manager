@@ -7,6 +7,7 @@ import { authRouter } from './routes/authRoutes.js';
 import { rainfallRouter } from './routes/rainfallRoutes.js';
 import { predictionRouter } from './routes/predictionRoutes.js';
 import { trainingRouter } from './routes/trainingRoutes.js';
+import { sensorPackageRouter } from './routes/sensorPackageRoutes.js';
 
 import createDefaultAdmin from './utils/createAdmin.js';
 
@@ -27,6 +28,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/rainfall', rainfallRouter);
 app.use('/api/prediction', predictionRouter);
 app.use('/api/training', trainingRouter);
+app.use('/api/sensor-packages', sensorPackageRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {

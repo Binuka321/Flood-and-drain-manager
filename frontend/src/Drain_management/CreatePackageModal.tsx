@@ -4,10 +4,13 @@ import type { SensorPackage } from './types';
 
 interface CreatePackageModalProps {
   onClose: () => void;
-  onCreate: (pkg: Omit<SensorPackage, 'id' | 'status' | 'lastUpdate' | 'currentReadings'>) => void;
+  onCreate: (pkg: Omit<SensorPackage, 'id' | 'status' | 'lastUpdate' | 'currentReadings'>) => void | Promise<void>;
+  /** Set by parent when the API returns an error */
+  serverError?: string | null;
 }
 
-export function CreatePackageModal({ onClose, onCreate }: CreatePackageModalProps) {
+export function CreatePackageModal({ onClose, onCreate, serverError }: CreatePackageModalProps) {
+  const [formError, setFormError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     locationName: '',
@@ -24,6 +27,12 @@ export function CreatePackageModal({ onClose, onCreate }: CreatePackageModalProp
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError('');
+
+    if (!formData.esp32 && !formData.uno) {
+      setFormError('Select at least one board (ESP32 or UNO).');
+      return;
+    }
 
     const newPackage: Omit<SensorPackage, 'id' | 'status' | 'lastUpdate' | 'currentReadings'> = {
       name: formData.name,
@@ -63,6 +72,11 @@ export function CreatePackageModal({ onClose, onCreate }: CreatePackageModalProp
         </div>
 
         <form onSubmit={handleSubmit} className="p-6">
+          {(formError || serverError) && (
+            <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
+              {formError || serverError}
+            </div>
+          )}
           {/* Package Name */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
