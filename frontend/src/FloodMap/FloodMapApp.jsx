@@ -5,32 +5,32 @@ import "leaflet/dist/leaflet.css";
 /*
   All 25 Districts of Sri Lanka with elevation data
 */
-const DISTRICTS = {
-  Ampara: { elevation: 30 },
-  Anuradhapura: { elevation: 81 },
-  Badulla: { elevation: 670 },
-  Batticaloa: { elevation: 5 },
-  Colombo: { elevation: 5 },
-  Galle: { elevation: 13 },
-  Gampaha: { elevation: 30 },
-  Hambantota: { elevation: 25 },
-  Jaffna: { elevation: 5 },
-  Kalutara: { elevation: 10 },
-  Kandy: { elevation: 465 },
-  Kegalle: { elevation: 180 },
-  Kilinochchi: { elevation: 15 },
-  Kurunegala: { elevation: 116 },
-  Mannar: { elevation: 10 },
-  Matale: { elevation: 364 },
-  Matara: { elevation: 15 },
-  Moneragala: { elevation: 300 },
-  Mullaitivu: { elevation: 20 },
-  NuwaraEliya: { elevation: 1868 },
-  Polonnaruwa: { elevation: 58 },
-  Puttalam: { elevation: 10 },
-  Ratnapura: { elevation: 34 },
-  Trincomalee: { elevation: 15 },
-  Vavuniya: { elevation: 90 }
+const DISTRICT_COORDS = {
+  Ampara: [7.2975, 81.6820],
+  Anuradhapura: [8.3114, 80.4037],
+  Badulla: [6.9895, 81.0550],
+  Batticaloa: [7.7102, 81.6924],
+  Colombo: [6.9271, 79.8612],
+  Galle: [6.0535, 80.2210],
+  Gampaha: [7.0917, 79.9997],
+  Hambantota: [6.1241, 81.1185],
+  Jaffna: [9.6615, 80.0255],
+  Kalutara: [6.5854, 79.9607],
+  Kandy: [7.2906, 80.6337],
+  Kegalle: [7.2513, 80.3464],
+  Kilinochchi: [9.3803, 80.3770],
+  Kurunegala: [7.4863, 80.3647],
+  Mannar: [8.9800, 79.9040],
+  Matale: [7.4675, 80.6234],
+  Matara: [5.9549, 80.5550],
+  Moneragala: [6.8728, 81.3507],
+  Mullaitivu: [9.2671, 80.8142],
+  NuwaraEliya: [6.9497, 80.7891],
+  Polonnaruwa: [7.9403, 81.0188],
+  Puttalam: [8.0362, 79.8283],
+  Ratnapura: [6.6828, 80.3992],
+  Trincomalee: [8.5874, 81.2152],
+  Vavuniya: [8.7514, 80.4971]
 };
 
 export default function FloodMapApp({ onBack }) {
@@ -61,11 +61,10 @@ export default function FloodMapApp({ onBack }) {
   },
   body: JSON.stringify({
     features: {
-      rainfall: mlRainfall,
-      flood_events: 0,
-      rainfall_moving_avg: mlRainfall,
-      rainfall_deviation: 0
-    }
+  rainfall: Number(rainfall),
+  latitude: lat,
+  longitude: lon
+}
   })
 });
 
@@ -121,8 +120,13 @@ export default function FloodMapApp({ onBack }) {
   const calculateRisk = async () => {
   const updated = {};
 
-  for (const [district] of Object.entries(DISTRICTS)) {
+  for (const district of Object.keys(DISTRICTS)) {
     if (!selectedDistricts[district]) continue;
+
+    const coords = DISTRICT_COORDS[district];
+    if (!coords) continue;
+
+    const [lat, lon] = coords;
 
     try {
       const response = await fetch('http://localhost:5000/api/ml/prediction/predict', {
@@ -131,16 +135,13 @@ export default function FloodMapApp({ onBack }) {
         body: JSON.stringify({
           features: {
             rainfall: Number(rainfall),
-            flood_events: 0,
-            rainfall_moving_avg: Number(rainfall),
-            rainfall_deviation: 0
+            latitude: lat,
+            longitude: lon
           }
         })
       });
 
       const result = await response.json();
-
-      console.log("Prediction for", district, result); // DEBUG
 
       const label = result.prediction_label;
 
@@ -158,7 +159,6 @@ export default function FloodMapApp({ onBack }) {
     }
   }
 
-  console.log("FINAL MAP DATA:", updated); // DEBUG
   setRiskMap(updated);
 };
 
